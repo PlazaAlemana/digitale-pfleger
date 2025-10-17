@@ -169,13 +169,14 @@ if __name__ == '__main__':
     print("🌐 Digitale Pfleger Web App - Starting...")
     print("=" * 75)
 
-    # Get port from environment (for deployment) or use 5000 for local
     port = int(os.environ.get('PORT', 5000))
 
     if os.environ.get('RENDER'):
-        # Production mode on Render
+        # Production mode - use waitress
         print(f"\n📍 Running in PRODUCTION mode on port {port}")
-        app.run(host='0.0.0.0', port=port)
+        from waitress import serve
+
+        serve(app, host='0.0.0.0', port=port)
     else:
         # Development mode
         print(f"\n📍 Access the app at: http://localhost:{port}")
