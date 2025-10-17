@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digitale Pfleger von Stephan Dietler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .pdf-info {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .pdf-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .pdf-stats {
+            display: inline-block;
+            color: #6c757d;
+            font-size: 0.95em;
+        }
+
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message-content {
+            display: inline-block;
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            line-height: 1.6;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.agent .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+
+        .input-area {
+            padding: 25px 30px;
+            background: white;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        #questionInput {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #questionInput:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .quick-actions {
+            padding: 15px 30px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            border-radius: 15px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🩺 Digitale Pfleger</h1>
+            <p>von Stephan Dietler</p>
+        </div>
+
+        <div class="pdf-info" id="pdfInfo">
+            <span class="pdf-badge">Loading...</span>
+            <span class="pdf-stats">Initializing...</span>
+        </div>
+
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="askQuestion('Was ist dieses Dokument?')">📄 Was ist das?</button>
+            <button class="quick-btn" onclick="getSummary()">📋 Zusammenfassung</button>
+            <button class="quick-btn" onclick="askQuestion('Was sind die wichtigsten Punkte?')">🔑 Hauptpunkte</button>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message agent">
+                <div class="message-content">
+                    👋 Hallo! Ich bin bereit, Fragen zu Ihrem PDF zu beantworten. Was möchten Sie wissen?
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-group">
+                <input
+                    type="text"
+                    id="questionInput"
+                    placeholder="Stellen Sie eine Frage zum Dokument..."
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button onclick="submitQuestion()" id="submitBtn">Fragen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLoading = false;
+
+        window.onload = function() {
+            loadPDFStatus();
+        };
+
+        async function loadPDFStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                if (data.success && data.pdf_loaded) {
+                    const meta = data.metadata;
+                    document.getElementById('pdfInfo').innerHTML = `
+                        <span class="pdf-badge">✓ ${data.pdf_name}</span>
+                        <span class="pdf-stats">
+                            ${meta.total_words.toLocaleString()} Wörter •
+                            ${meta.num_chunks} Chunks •
+                            ${meta.size_mb} MB
+                        </span>
+                    `;
+                } else {
+                    document.getElementById('pdfInfo').innerHTML = `
+                        <span class="pdf-badge" style="background: #dc3545;">Kein PDF geladen</span>
+                        <span class="pdf-stats">Bitte fügen Sie ein PDF zum Knowledge-Ordner hinzu</span>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading status:', error);
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !isLoading) {
+                submitQuestion();
+            }
+        }
+
+        async function submitQuestion() {
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+
+            if (!question || isLoading) return;
+
+            input.value = '';
+            addMessage(question, 'user');
+
+            isLoading = true;
+            document.getElementById('submitBtn').disabled = true;
+            const loadingId = addLoadingMessage();
+
+            try {
+                const response = await fetch('/api/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+                removeMessage(loadingId);
+
+                if (data.success) {
+                    addMessage(data.answer, 'agent');
+                } else {
+                    addMessage('❌ Fehler: ' + data.error, 'agent');
+                }
+            } catch (error) {
+                removeMessage(loadingId);
+                addMessage('❌ Netzwerkfehler. Bitte versuchen Sie es erneut.', 'agent');
+                console.error('Error:', error);
+            } finally {
+                isLoading = false;
+                document.getElementById('submitBtn').disabled = false;
+            }
+        }
+
+        function askQuestion(question) {
+            document.getElementById('questionInput').value = question;
+            submitQuestion();
+        }
+
+        async function getSummary() {
+            if (isLoading) return;
+
+            addMessage('Geben Sie mir eine Zusammenfassung', 'user');
+
+            isLoading = true;
+            const loadingId = addLoadingMessage();
+
+            try {
+                const response = await fetch('/api/summary');
+                const data = await response.json();
+
+                removeMessage(loadingId);
+
+                if (data.success) {
+                    addMessage(data.summary, 'agent');
+                } else {
+                    addMessage('❌ Fehler: ' + data.error, 'agent');
+                }
+            } catch (error) {
+                removeMessage(loadingId);
+                addMessage('❌ Netzwerkfehler. Bitte versuchen Sie es erneut.', 'agent');
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">${escapeHtml(text)}</div>
+            `;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addLoadingMessage() {
+            const container = document.getElementById('chatContainer');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message agent';
+            loadingDiv.id = 'loading-' + Date.now();
+            loadingDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="spinner"></div> Denke nach...
+                </div>
+            `;
+            container.appendChild(loadingDiv);
+            container.scrollTop = container.scrollHeight;
+            return loadingDiv.id;
+        }
+
+        function removeMessage(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML.replace(/\n/g, '<br>');
+        }
+    </script>
+</body>
+</html>
